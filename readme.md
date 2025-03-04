@@ -54,6 +54,7 @@
     sudo apt-get install jstest-gtk
     ```
 13. Install PingViewer for sonar:
+   downlod [ping-viwer](https://github.com/bluerobotics/ping-viewer/releases/latest/download/pingviewer-Release.AppImage)
     ```bash
     chmod u+x ping-viewer-linux.AppImage
     ```
