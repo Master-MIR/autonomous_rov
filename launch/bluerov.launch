@@ -1,0 +1,26 @@
+<launch>
+    <!-- Include run_gamepad launch file -->
+    <group> 
+	  <arg name="namespace" default="bluerov2"/>
+		<arg name="run_initialization_test" default="True" />
+	<node pkg="autonomous_rov" exec="listenerMIR" name="listenerMIR" namespace="$(var namespace)" output="screen">
+	<param name="run_initialization_test" value="$(var run_initialization_test)" />
+	</node>		
+		
+	</group>
+
+    <!-- Include run_listener_MIR_joy launch file -->
+    <include file="$(find-pkg-share autonomous_rov)/launch/run_listener_MIR_joy.launch"/>
+
+    <!-- Include run_mavros launch file -->
+    <include file="$(find-pkg-share autonomous_rov)/launch/run_mavros.launch"/>
+
+    <!-- Include run_video launch file -->
+    <group> 
+	<arg name="namespace" default="bluerov2"/>
+    
+
+	<node pkg="autonomous_rov" exec="video" name="video" namespace="$(var namespace)" output="screen">
+	</node>			
+	</group>
+</launch>

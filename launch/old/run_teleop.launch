@@ -1,0 +1,13 @@
+<launch>		
+<group> 
+  <arg name="joy_config" default="xbox" />
+  <arg name="joy_dev" default="/dev/input/js0" />
+  <arg name="config_filepath" default="$(find-pkg-share autonomous_rov)/config/$(var joy_config).config.yaml" />
+  <arg name="joy_topic" default="joy" />
+  
+   <include file="$(find-pkg-share teleop_twist_joy)/launch/teleop-launch.py">
+	<arg name="config_filepath" value="$(var config_filepath)" />
+   </include>	
+		
+</group>
+</launch>	

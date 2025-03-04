@@ -1,0 +1,62 @@
+running egg_info
+creating build/autonomous_rov/autonomous_rov.egg-info
+writing build/autonomous_rov/autonomous_rov.egg-info/PKG-INFO
+writing dependency_links to build/autonomous_rov/autonomous_rov.egg-info/dependency_links.txt
+writing entry points to build/autonomous_rov/autonomous_rov.egg-info/entry_points.txt
+writing requirements to build/autonomous_rov/autonomous_rov.egg-info/requires.txt
+writing top-level names to build/autonomous_rov/autonomous_rov.egg-info/top_level.txt
+writing manifest file 'build/autonomous_rov/autonomous_rov.egg-info/SOURCES.txt'
+reading manifest file 'build/autonomous_rov/autonomous_rov.egg-info/SOURCES.txt'
+writing manifest file 'build/autonomous_rov/autonomous_rov.egg-info/SOURCES.txt'
+running build
+running build_py
+creating /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build
+creating /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib
+creating /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+copying autonomous_rov/video.py -> /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+copying autonomous_rov/pinger_node_2.py -> /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+copying autonomous_rov/camera_parameters.py -> /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+copying autonomous_rov/image_processing_tracker.py -> /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+copying autonomous_rov/pinger_node.py -> /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+copying autonomous_rov/listenerMIR.py -> /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+copying autonomous_rov/__init__.py -> /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov
+running install
+running install_lib
+creating /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+copying /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov/video.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+copying /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov/pinger_node_2.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+copying /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov/camera_parameters.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+copying /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov/image_processing_tracker.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+copying /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov/pinger_node.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+copying /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov/listenerMIR.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+copying /home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/build/lib/autonomous_rov/__init__.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov
+byte-compiling /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov/video.py to video.cpython-310.pyc
+byte-compiling /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov/pinger_node_2.py to pinger_node_2.cpython-310.pyc
+byte-compiling /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov/camera_parameters.py to camera_parameters.cpython-310.pyc
+byte-compiling /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov/image_processing_tracker.py to image_processing_tracker.cpython-310.pyc
+byte-compiling /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov/pinger_node.py to pinger_node.cpython-310.pyc
+byte-compiling /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov/listenerMIR.py to listenerMIR.cpython-310.pyc
+byte-compiling /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov/__init__.py to __init__.cpython-310.pyc
+running install_data
+creating /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/ament_index
+creating /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/ament_index/resource_index
+creating /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/ament_index/resource_index/packages
+copying resource/autonomous_rov -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/ament_index/resource_index/packages
+copying package.xml -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov
+creating /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/launch
+copying launch/run_video.launch -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/launch
+copying launch/run_pinger.launch -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/launch
+copying launch/run_all_no_video_no_pinger.launch -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/launch
+creating /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/config
+copying config/xbox.config.yaml -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/config
+creating /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/lib
+copying setup.py -> /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/share/autonomous_rov/lib
+running install_egg_info
+Copying build/autonomous_rov/autonomous_rov.egg-info to /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/python3.10/site-packages/autonomous_rov-0.0.0-py3.10.egg-info
+running install_scripts
+Installing image_processing_tracker script to /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/autonomous_rov
+Installing listenerMIR script to /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/autonomous_rov
+Installing pinger_node script to /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/autonomous_rov
+Installing pinger_node_2 script to /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/autonomous_rov
+Installing video script to /home/vincent/ros2_ws/src/autonomous_rov/install/autonomous_rov/lib/autonomous_rov
+writing list of installed files to '/home/vincent/ros2_ws/src/autonomous_rov/build/autonomous_rov/install.log'

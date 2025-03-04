@@ -1,0 +1,10 @@
+<launch>		
+	<group> 
+	  <arg name="namespace" default="bluerov2"/>
+		<arg name="run_initialization_test" default="True" />
+	<node pkg="autonomous_rov" exec="listenerMIR" name="listenerMIR" namespace="$(var namespace)" output="screen">
+	<param name="run_initialization_test" value="$(var run_initialization_test)" />
+	</node>		
+		
+	</group>
+</launch>	
