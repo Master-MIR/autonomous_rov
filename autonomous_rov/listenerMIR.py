@@ -46,11 +46,16 @@ class MyPythonNode(Node):
 
         self.subscriber()
 
+        self.control_rate = 20.0  # Hz
+        self.control_period = 1.0 / self.control_rate
+        time_tupple = self.get_clock().now().seconds_nanoseconds()
+        self.time = time_tupple[0] + (time_tupple[1] * 10**-9)
+
         # set timer if needed
         timer_period = 0.05  # 50 msec - 20 Hz
-        self.timer = self.create_timer(timer_period, self.timer_callback)
+        self.timer = self.create_timer(self.control_period, self.timer_callback)
         self.i = 0
-
+        
         # variables
         self.set_mode = [0] * 3
         self.set_mode[0] = True  # Mode manual
@@ -85,22 +90,19 @@ class MyPythonNode(Node):
         self.pid_depth = PIDController(type='linear')
         self.pid_yaw = PIDController(type='angular')
 
-        self.set_parameters_callback(self.callback_params)
-        
         # create parameter callback
-    
-    def declare_and_set_params(self):
-        self.config = {}
-        self._declare_and_fill_map('k_p_depth', 0.0, "K P of depth", self.config)
-        self._declare_and_fill_map('k_i_depth', 0.0, "K I of depth", self.config)
-        self._declare_and_fill_map('k_d_depth', 0.0, "K D of depth", self.config)
+        self.set_parameters_callback(self.callback_params)
 
-        self._declare_and_fill_map('k_p_yaw', 0.0, "K P of yaw", self.config)
-        self._declare_and_fill_map('k_i_yaw', 0.0, "K I of yaw", self.config)
-        self._declare_and_fill_map('k_d_yaw', 0.0, "K D of yaw", self.config)
+    def control_loop(self):
+        desired_depth = 0.0
+        desired_yaw = 0.0
 
-        self.update_control_param()
+        depth_control = self.pid_depth.calculate_pid(desired_depth, self.depth_wrt_startup, self.time)
+        # yaw_control = self.pid_yaw.calculate_pid(desired_yaw, self.angle_yaw, self.time)
 
+        # convert to PWM
+
+        # send to motor
 
     def timer_callback(self):
         # msg = String()
@@ -120,6 +122,10 @@ class MyPythonNode(Node):
             self.setOverrideRCIN(1500, 1500, self.Correction_depth, self.Correction_yaw, 1500, 1500)
         else:  # normally, never reached
             pass
+
+        # call control function
+        self.get_logger().info("Control running")
+        self.control_loop()
 
     def armDisarm(self, armed):
         # This functions sends a long command service with 400 code to arm or disarm motors
@@ -322,6 +328,9 @@ class MyPythonNode(Node):
         return int(pulse_width)
 
     def OdoCallback(self, data):
+        """
+        Get imu data from this function
+        """
         orientation = data.orientation
         angular_velocity = data.angular_velocity
 
@@ -384,10 +393,15 @@ class MyPythonNode(Node):
         self.Correction_yaw = 1500
 
     def RelAltCallback(self, data):
+        """
+        Get depth sensor data from this function
+        """
         if (self.init_p0):
             # 1st execution, init
             self.depth_p0 = data
             self.init_p0 = False
+
+        # TODO: 
         # setup depth servo control here
         # ...
 
@@ -502,6 +516,17 @@ class MyPythonNode(Node):
             key, default_value, ParameterDescriptor(description=description))
         map[key] = param.value
 
+    def declare_and_set_params(self):
+        self.config = {}
+        self._declare_and_fill_map('k_p_depth', 0.0, "K P of depth", self.config)
+        self._declare_and_fill_map('k_i_depth', 0.0, "K I of depth", self.config)
+        self._declare_and_fill_map('k_d_depth', 0.0, "K D of depth", self.config)
+
+        self._declare_and_fill_map('k_p_yaw', 0.0, "K P of yaw", self.config)
+        self._declare_and_fill_map('k_i_yaw', 0.0, "K I of yaw", self.config)
+        self._declare_and_fill_map('k_d_yaw', 0.0, "K D of yaw", self.config)
+
+        self.update_control_param()
 
 
 def main(args=None):

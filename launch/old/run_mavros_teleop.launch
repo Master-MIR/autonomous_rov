@@ -1,0 +1,38 @@
+<launch>		
+	<group> 
+		<arg name="namespace" default="bluerov2"/>
+		<arg name="fcu_url" default="udp://192.168.2.1:14550@" />
+		<arg name="gcs_url" default="" />
+		<arg name="tgt_system" default="1" />
+		<arg name="tgt_component" default="1" />
+		<arg name="log_output" default="screen" />
+		<arg name="fcu_protocol" default="v2.0" />
+		<arg name="respawn_mavros" default="false" />
+
+		<include file="$(find-pkg-share mavros)/launch/node.launch">
+			<arg name="pluginlists_yaml" value="$(find-pkg-share mavros)/launch/px4_pluginlists.yaml" />
+			<arg name="config_yaml" value="$(find-pkg-share mavros)/launch/px4_config.yaml" />
+			<arg name="fcu_url" value="$(var fcu_url)" />
+			<arg name="gcs_url" value="$(var gcs_url)" />
+			<arg name="tgt_system" value="$(var tgt_system)" />
+			<arg name="tgt_component" value="$(var tgt_component)" />
+			<arg name="log_output" value="$(var log_output)" />
+			<arg name="fcu_protocol" value="$(var fcu_protocol)" />
+			<arg name="respawn_mavros" value="$(var respawn_mavros)" />
+			<arg name="namespace" value="$(var namespace)"/>
+		</include>	
+				
+		<push-ros-namespace namespace="bluerov2"/>
+				
+		<!-- start teleopxbox to convert joystick values into vel -->
+		  <arg name="joy_config" default="xbox" />
+		  <arg name="joy_dev" default="/dev/input/js0" />
+		  <arg name="config_filepath" default="src/autonomous_rov/config/$(var joy_config).config.yaml" />
+		  <arg name="joy_topic" default="joy" />
+  
+		   <include file="$(find-pkg-share teleop_twist_joy)/launch/teleop-launch.py">
+			<arg name="config_filepath" value="$(var config_filepath)" />
+		   </include>			
+		
+	</group>
+</launch>	
