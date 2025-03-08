@@ -57,6 +57,7 @@ class MyPythonNode(Node):
         self.i = 0
         
         # variables
+        # mode -> array
         self.set_mode = [0] * 3
         self.set_mode[0] = True  # Mode manual
         self.set_mode[1] = False  # Mode automatic without correction
@@ -80,8 +81,11 @@ class MyPythonNode(Node):
         self.Vmin_mot = 1100
 
         # corrections for control
+        # assume neutral buoyancy + water bottle
+        # ~ 1.5 kgf -> 15 N
+        # TODO: see the mapping function for 
         self.Correction_yaw = 1500
-        self.Correction_depth = 1500
+        self.Correction_depth = 1500 # need to calculate using water bottle + flotability
 
         # controller parameters
         # self.config = {}
@@ -93,7 +97,10 @@ class MyPythonNode(Node):
         # create parameter callback
         self.set_parameters_callback(self.callback_params)
 
+
+    # TODO: remove this function and call pid directly in the RelAltCallback
     def control_loop(self):
+        # TODO: subscribe instead
         desired_depth = 0.0
         desired_yaw = 0.0
 
@@ -117,15 +124,11 @@ class MyPythonNode(Node):
             1]:  # Arbitrary velocity command can be defined here to observe robot's velocity, zero by default
             self.setOverrideRCIN(1500, 1500, 1500, 1500, 1500, 1500)
             return
-        elif self.set_mode[2]:
+        elif self.set_mode[2]: # dis mode
             # send commands in correction mode
             self.setOverrideRCIN(1500, 1500, self.Correction_depth, self.Correction_yaw, 1500, 1500)
         else:  # normally, never reached
             pass
-
-        # call control function
-        self.get_logger().info("Control running")
-        self.control_loop()
 
     def armDisarm(self, armed):
         # This functions sends a long command service with 400 code to arm or disarm motors
@@ -364,7 +367,7 @@ class MyPythonNode(Node):
         angle_wrt_startup[2] = ((angle_yaw - self.angle_yaw_a0 + 3.0 * math.pi) % (
                     2.0 * math.pi) - math.pi) * 180 / math.pi
 
-        angle = Twist()
+        angle = Twist() # orientation in degrees but using twist msg for some reason
         angle.angular.x = angle_wrt_startup[0]
         angle.angular.y = angle_wrt_startup[1]
         angle.angular.z = angle_wrt_startup[2]
@@ -376,7 +379,7 @@ class MyPythonNode(Node):
         q = angular_velocity.y
         r = angular_velocity.z
 
-        vel = Twist()
+        vel = Twist() # angular velocity
         vel.angular.x = p
         vel.angular.y = q
         vel.angular.z = r
@@ -384,6 +387,7 @@ class MyPythonNode(Node):
         # publish velocity
         self.pub_angular_velocity.publish(vel)
 
+        # TODO: setup pid control
         # Only continue if manual_mode is disabled
         if (self.set_mode[0]):
             return
@@ -407,71 +411,10 @@ class MyPythonNode(Node):
 
         # update Correction_depth
         Correction_depth = 1500
+        # chagnge the correction depth -> pid control output
         self.Correction_depth = int(Correction_depth)
         # Send PWM commands to motors in timer
 
-    def DvlCallback(self, data):
-        u = data.velocity.x  # Linear surge velocity
-        v = data.velocity.y  # Linear sway velocity
-        w = data.velocity.z  # Linear heave velocity
-        Vel = Twist()
-        Vel.linear.x = u
-        Vel.linear.y = v
-        Vel.linear.z = w
-        self.pub_linear_velocity.publish(Vel)
-
-    # works but at 4hz compared with 25 Hz for global_position/rel_alt !
-    # /uas1/mavlink_source runs at more than 500 Hz !    
-    # try with pyvmavlink using an udp connection, to see if gain in hz                    
-    def mavlink_callback(self, data):
-        # Check if message id is valid (I'm using SCALED_PRESSURE2)
-        if data.msgid == 137:
-            # self.get_logger().info("=> In mavlink_callback, msgid 137 SCALED_PRESSURE2, Package: " + str(data))
-            # Transform the payload in a python string
-            p = pack("QQ", *data.payload64)
-            # Transform the string in valid values
-            # https://docs.python.org/2/library/struct.html
-            time_boot_ms, water_press_abs, press_diff, temperature = unpack("Iffhxx", p)
-
-            # a priori, in hPa (hectoPascal)
-            # self.get_logger().info("water_press_abs=" + str(water_press_abs))
-
-            rho = 1000.0  # 1025.0 for sea water
-            g = 9.80665
-
-            # Only continue if correction mode is activated
-            # if (self.set_mode[0] or self.set_mode[1]):
-            #	return
-
-            pressure = water_press_abs * 100.0
-
-            if (self.init_p0):
-                # 1st execution, init
-                self.depth_p0 = (pressure - 101100) / (rho * g)
-                self.init_p0 = False
-
-            self.depth_wrt_startup = (pressure - 101100) / (rho * g) - self.depth_p0
-            msg = Float64()
-            msg.data = self.depth_wrt_startup
-
-            # publish depth
-            self.pub_depth.publish(msg)
-
-            # TODO: depth control
-            # setup depth servo control here
-            # ...
-
-            # update Correction_depth
-
-            Correction_depth = 1500
-            self.Correction_depth = int(Correction_depth)
-        # Send PWM commands to motors in timer
-
-    def pingerCallback(self, data):
-        self.pinger_distance = data.data[0]
-        self.pinger_confidence = data.data[1]
-
-    # self.get_logger().info("pinger_distance =" + str(self.pinger_distance))
 
     def subscriber(self):
         qos_profile = QoSProfile(
@@ -490,16 +433,11 @@ class MyPythonNode(Node):
         self.subrel_alt = self.create_subscription(Float64, "global_position/rel_alt", self.RelAltCallback,
                                                    qos_profile=qos_profile)
         self.subrel_alt  # prevent unused variable warning
-        # self.subwater_pressure = self.create_subscription(Mavlink,"mavlink/from", self.mavlink_callback, qos_profile = qos_profile)
-        # self.subwater_pressure = self.create_subscription(Mavlink,"/uas1/mavlink_source", self.mavlink_callback, qos_profile = qos_profile)
-        # self.subwater_pressure # prevent unused variable warning
-
-        # self.sub = self.create_subscription(DVL, "/dvl/data", DvlCallback)
-        self.subping = self.create_subscription(Float64MultiArray, "ping1d/data", self.pingerCallback,
-                                                qos_profile=qos_profile)
-        self.subping  # prevent unused variable warning
 
         self.get_logger().info("Subscriptions done.")
+
+
+    ### For PID Controller ###
 
     def update_control_param(self):
         self.pid_depth.reconfig_param(self.config['k_p_depth'], self.config['k_i_depth'], self.config['k_d_depth'])
