@@ -98,8 +98,9 @@ class MyPythonNode(Node):
         self.desired_yaw = 0.0
 
         # call trajectory generation
-        
-
+        self.time_final = 20
+        self.traj = CubicTrajectory(self.time, self.time_final)
+        self.generated_z_des, self.generated_z_dot_des = self.traj.generateCubicTrajectory()
 
     def pid_to_pwm(self, pid):
         """
@@ -132,19 +133,23 @@ class MyPythonNode(Node):
         # TODO:
         # setup for trajectory control
 
-        i=0
-        traj = [0.0, 0.5, 0.0, 0.5, 0.0]
+        i = 0
+        traj = self.generated_z_des
         self.desired_depth = traj[i]
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, self.depth_p0, self.time)
         depth_control = self.pid_to_pwm(depth_control)  
         self.Correction_depth = int(depth_control)
-        if self.depth_p0 - self.desired_depth < 0.1:
-            i += 1        
-        
+
+        # tolerance for depth
+        if np.abs(self.depth_p0 - self.desired_depth) < 0.02:
+            if i < len(traj):
+                self.desired_depth = traj[i]
+                i += 1
         
         
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, self.depth_p0, self.time)
         depth_control = self.pid_to_pwm(depth_control)
+
         # update Correction_depth
         # Correction_depth = 1500
 

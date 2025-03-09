@@ -1,7 +1,7 @@
 import numpy as np
 
 class CubicTrajectory():
-    def __init__(self, time_init, time_final, z_init, z_final, dt):
+    def __init__(self, time_init, time_final, z_init=0.0, z_final=0.5, dt=0.1):
         self.time_init = time_init
         self.time_final = time_final
         self.z_init = z_init
