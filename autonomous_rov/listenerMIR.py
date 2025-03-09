@@ -89,13 +89,13 @@ class MyPythonNode(Node):
 
         # controller parameters
         self.config = {}
-        self.declare_and_set_params()
-
         self.pid_depth = PIDController(type='linear')
         self.pid_yaw = PIDController(type='angular')
 
+        self.declare_and_set_params()
+
         # create parameter callback
-        self.set_parameters_callback(self.callback_params)
+        self.add_on_set_parameters_callback(self.callback_params)
 
         self.desired_depth = 0.0
         self.desired_yaw = 0.0
@@ -502,7 +502,7 @@ class MyPythonNode(Node):
         map[key] = param.value
 
     def declare_and_set_params(self):
-        self.config = {}
+        # self.config = {}
         self._declare_and_fill_map('k_p_depth', 0.0, "K P of depth", self.config)
         self._declare_and_fill_map('k_i_depth', 0.0, "K I of depth", self.config)
         self._declare_and_fill_map('k_d_depth', 0.0, "K D of depth", self.config)
