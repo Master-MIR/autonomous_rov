@@ -18,9 +18,6 @@ from geometry_msgs.msg import Twist
 from autonomous_rov.PIDController import PIDController
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 
-# from waterlinked_a50_ros_driver.msg import DVL
-# from waterlinked_a50_ros_driver.msg import DVLBeam
-
 class MyPythonNode(Node):
     def __init__(self):
         super().__init__("listenerMIR")
@@ -37,12 +34,10 @@ class MyPythonNode(Node):
         self.get_logger().info("Publishers created.")
 
         self.get_logger().info("ask router to create endpoint to enable mavlink/from publication.")
-        # self.addEndPoint()
 
         self.armDisarm(False)  # Not automatically disarmed at startup
         rate = 25  # 25 Hz
         self.setStreamRate(rate)
-        # self.manageStabilize(False)
 
         self.subscriber()
 
@@ -88,7 +83,7 @@ class MyPythonNode(Node):
         self.Correction_depth = 1500 # need to calculate using water bottle + flotability
 
         # controller parameters
-        # self.config = {}
+        self.config = {}
         self.declare_and_set_params()
 
         self.pid_depth = PIDController(type='linear')
@@ -116,7 +111,10 @@ class MyPythonNode(Node):
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, self.depth_p0, self.time)
 
         # update Correction_depth
-        Correction_depth = 1500
+        # Correction_depth = 1500
+
+        Correction_depth = self.Correction_depth + depth_control #??
+
         # chagnge the correction depth -> pid control output
         self.Correction_depth = int(Correction_depth)
         # Send PWM commands to motors in timer
@@ -188,20 +186,8 @@ class MyPythonNode(Node):
 
         # Send PWM commands to motors
         # yaw command to be adapted using sensor feedback
-        self.Correction_yaw = 1500
-
-    # TODO: remove this function and call pid directly in the RelAltCallback
-    # def control_loop(self):
-    #     
-    #     desired_depth = 0.0
-    #     desired_yaw = 0.0
-
-    #     depth_control = self.pid_depth.calculate_pid(desired_depth, self.depth_wrt_startup, self.time)
-        # yaw_control = self.pid_yaw.calculate_pid(desired_yaw, self.angle_yaw, self.time)
-
-        # convert to PWM
-
-        # send to motor
+        # self.Correction_yaw = 1500
+        Correction_yaw = self.Correction_yaw + yaw_control
 
     def timer_callback(self):
         # msg = String()
