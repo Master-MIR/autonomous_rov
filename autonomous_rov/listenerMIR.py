@@ -31,6 +31,9 @@ class MyPythonNode(Node):
         self.pub_depth = self.create_publisher(Float64, 'depth', 10)
         self.pub_angular_velocity = self.create_publisher(Twist, 'angular_velocity', 10)
         self.pub_linear_velocity = self.create_publisher(Twist, 'linear_velocity', 10)
+        self.thrusters_val = self.create_publisher(Float64, 'thrusters_val', 10)
+        self.yaw_val = self.create_publisher(Float64, 'yaw_val', 10)
+
 
         self.get_logger().info("Publishers created.")
 
@@ -154,6 +157,7 @@ class MyPythonNode(Node):
         
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, self.time)
         depth_control = self.pid_to_pwm(depth_control)
+        self.thrusters_val.publish(depth_control)
 
         # update Correction_depth
         # Correction_depth = 1500
@@ -232,9 +236,13 @@ class MyPythonNode(Node):
         # Send PWM commands to motors
         # yaw command to be adapted using sensor feedback
         # self.Correction_yaw = 1500
-        Correction_yaw = self.Correction_yaw + yaw_control
 
-        self.Correction_yaw = int(Correction_yaw)
+        # Correction_yaw = self.Correction_yaw + yaw_control
+        correction_yaw = self.pid_to_pwm(yaw_control)
+        self.yaw_val.publish(correction_yaw)
+
+
+        self.Correction_yaw = int(correction_yaw)
 
     def timer_callback(self):
         # msg = String()
