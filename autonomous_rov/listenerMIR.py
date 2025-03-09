@@ -97,14 +97,106 @@ class MyPythonNode(Node):
         # create parameter callback
         self.set_parameters_callback(self.callback_params)
 
+        self.desired_depth = 0.0
+        self.desired_yaw = 0.0
+
+    def RelAltCallback(self, data):
+        """
+        Get depth sensor data from this function
+        """
+        if (self.init_p0):
+            # 1st execution, init
+            self.depth_p0 = data
+            self.init_p0 = False
+
+        # TODO: 
+        # setup depth servo control here
+        # ...
+
+        depth_control = self.pid_depth.calculate_pid(self.desired_depth, self.depth_p0, self.time)
+
+        # update Correction_depth
+        Correction_depth = 1500
+        # chagnge the correction depth -> pid control output
+        self.Correction_depth = int(Correction_depth)
+        # Send PWM commands to motors in timer
+
+    def OdoCallback(self, data):
+        """
+        Get imu data from this function
+        """
+        orientation = data.orientation
+        angular_velocity = data.angular_velocity
+
+        # extraction of roll, pitch, yaw angles
+        x = orientation.x
+        y = orientation.y
+        z = orientation.z
+        w = orientation.w
+
+        sinr_cosp = 2.0 * (w * x + y * z)
+        cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
+        sinp = 2.0 * (w * y - z * x)
+        siny_cosp = 2.0 * (w * z + x * y)
+        cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
+        angle_roll = np.arctan2(sinr_cosp, cosr_cosp)
+        angle_pitch = np.arcsin(sinp)
+        angle_yaw = np.arctan2(siny_cosp, cosy_cosp)
+
+        if (self.init_a0):
+            # at 1st execution, init
+            self.angle_roll_a0 = angle_roll
+            self.angle_pitch_a0 = angle_pitch
+            self.angle_yaw_a0 = angle_yaw
+            self.init_a0 = False
+
+        angle_wrt_startup = [0] * 3
+        angle_wrt_startup[0] = ((angle_roll - self.angle_roll_a0 + 3.0 * math.pi) % (
+                    2.0 * math.pi) - math.pi) * 180 / math.pi
+        angle_wrt_startup[1] = ((angle_pitch - self.angle_pitch_a0 + 3.0 * math.pi) % (
+                    2.0 * math.pi) - math.pi) * 180 / math.pi
+        angle_wrt_startup[2] = ((angle_yaw - self.angle_yaw_a0 + 3.0 * math.pi) % (
+                    2.0 * math.pi) - math.pi) * 180 / math.pi
+
+        angle = Twist() # orientation in degrees but using twist msg for some reason
+        angle.angular.x = angle_wrt_startup[0]
+        angle.angular.y = angle_wrt_startup[1]
+        angle.angular.z = angle_wrt_startup[2]
+
+        self.pub_angle_degre.publish(angle)
+
+        # Extraction of angular velocity
+        p = angular_velocity.x
+        q = angular_velocity.y
+        r = angular_velocity.z
+
+        vel = Twist() # angular velocity
+        vel.angular.x = p
+        vel.angular.y = q
+        vel.angular.z = r
+
+        # publish velocity
+        self.pub_angular_velocity.publish(vel)
+
+        # TODO: setup pid control
+        # Only continue if manual_mode is disabled
+        if (self.set_mode[0]):
+            return
+
+        # yaw control
+        yaw_control = self.pid_yaw.calculate_pid(self.desired_yaw, angle.angular.z, self.time)
+
+        # Send PWM commands to motors
+        # yaw command to be adapted using sensor feedback
+        self.Correction_yaw = 1500
 
     # TODO: remove this function and call pid directly in the RelAltCallback
-    def control_loop(self):
-        # TODO: subscribe instead
-        desired_depth = 0.0
-        desired_yaw = 0.0
+    # def control_loop(self):
+    #     
+    #     desired_depth = 0.0
+    #     desired_yaw = 0.0
 
-        depth_control = self.pid_depth.calculate_pid(desired_depth, self.depth_wrt_startup, self.time)
+    #     depth_control = self.pid_depth.calculate_pid(desired_depth, self.depth_wrt_startup, self.time)
         # yaw_control = self.pid_yaw.calculate_pid(desired_yaw, self.angle_yaw, self.time)
 
         # convert to PWM
@@ -329,92 +421,6 @@ class MyPythonNode(Node):
             pulse_width = 1100
 
         return int(pulse_width)
-
-    def OdoCallback(self, data):
-        """
-        Get imu data from this function
-        """
-        orientation = data.orientation
-        angular_velocity = data.angular_velocity
-
-        # extraction of roll, pitch, yaw angles
-        x = orientation.x
-        y = orientation.y
-        z = orientation.z
-        w = orientation.w
-
-        sinr_cosp = 2.0 * (w * x + y * z)
-        cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
-        sinp = 2.0 * (w * y - z * x)
-        siny_cosp = 2.0 * (w * z + x * y)
-        cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
-        angle_roll = np.arctan2(sinr_cosp, cosr_cosp)
-        angle_pitch = np.arcsin(sinp)
-        angle_yaw = np.arctan2(siny_cosp, cosy_cosp)
-
-        if (self.init_a0):
-            # at 1st execution, init
-            self.angle_roll_a0 = angle_roll
-            self.angle_pitch_a0 = angle_pitch
-            self.angle_yaw_a0 = angle_yaw
-            self.init_a0 = False
-
-        angle_wrt_startup = [0] * 3
-        angle_wrt_startup[0] = ((angle_roll - self.angle_roll_a0 + 3.0 * math.pi) % (
-                    2.0 * math.pi) - math.pi) * 180 / math.pi
-        angle_wrt_startup[1] = ((angle_pitch - self.angle_pitch_a0 + 3.0 * math.pi) % (
-                    2.0 * math.pi) - math.pi) * 180 / math.pi
-        angle_wrt_startup[2] = ((angle_yaw - self.angle_yaw_a0 + 3.0 * math.pi) % (
-                    2.0 * math.pi) - math.pi) * 180 / math.pi
-
-        angle = Twist() # orientation in degrees but using twist msg for some reason
-        angle.angular.x = angle_wrt_startup[0]
-        angle.angular.y = angle_wrt_startup[1]
-        angle.angular.z = angle_wrt_startup[2]
-
-        self.pub_angle_degre.publish(angle)
-
-        # Extraction of angular velocity
-        p = angular_velocity.x
-        q = angular_velocity.y
-        r = angular_velocity.z
-
-        vel = Twist() # angular velocity
-        vel.angular.x = p
-        vel.angular.y = q
-        vel.angular.z = r
-
-        # publish velocity
-        self.pub_angular_velocity.publish(vel)
-
-        # TODO: setup pid control
-        # Only continue if manual_mode is disabled
-        if (self.set_mode[0]):
-            return
-
-        # Send PWM commands to motors
-        # yaw command to be adapted using sensor feedback
-        self.Correction_yaw = 1500
-
-    def RelAltCallback(self, data):
-        """
-        Get depth sensor data from this function
-        """
-        if (self.init_p0):
-            # 1st execution, init
-            self.depth_p0 = data
-            self.init_p0 = False
-
-        # TODO: 
-        # setup depth servo control here
-        # ...
-
-        # update Correction_depth
-        Correction_depth = 1500
-        # chagnge the correction depth -> pid control output
-        self.Correction_depth = int(Correction_depth)
-        # Send PWM commands to motors in timer
-
 
     def subscriber(self):
         qos_profile = QoSProfile(
