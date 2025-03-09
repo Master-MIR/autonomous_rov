@@ -189,6 +189,8 @@ class MyPythonNode(Node):
         # self.Correction_yaw = 1500
         Correction_yaw = self.Correction_yaw + yaw_control
 
+        self.Correction_yaw = int(Correction_yaw)
+
     def timer_callback(self):
         # msg = String()
         # msg.data = 'Hello World: %d' % self.i
