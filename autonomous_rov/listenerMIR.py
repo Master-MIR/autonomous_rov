@@ -41,6 +41,7 @@ class MyPythonNode(Node):
 
         self.subscriber()
 
+        # for control
         self.control_rate = 20.0  # Hz
         self.control_period = 1.0 / self.control_rate
         time_tupple = self.get_clock().now().seconds_nanoseconds()
@@ -95,6 +96,20 @@ class MyPythonNode(Node):
         self.desired_depth = 0.0
         self.desired_yaw = 0.0
 
+    def pid_to_pwm(self, pid):
+        """
+        Convert pid output to pwm signal
+        """
+        if pid > 0:
+            pwm = 1430 + 120 * pid
+        else:
+            pwm = 1540 - 100 * pid
+        if pwm > 1900:
+            pwm = 1900
+        elif pwm < 1100:
+            pwm = 1100
+        return pwm
+    
     def RelAltCallback(self, data):
         """
         Get depth sensor data from this function
@@ -109,14 +124,14 @@ class MyPythonNode(Node):
         # ...
 
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, self.depth_p0, self.time)
-
+        depth_control = self.pid_to_pwm(depth_control)
         # update Correction_depth
         # Correction_depth = 1500
 
-        Correction_depth = self.Correction_depth + depth_control #??
+        # Correction_depth = self.Correction_depth + depth_control #??
 
         # chagnge the correction depth -> pid control output
-        self.Correction_depth = int(Correction_depth)
+        self.Correction_depth = int(depth_control)
         # Send PWM commands to motors in timer
 
     def OdoCallback(self, data):
@@ -459,6 +474,18 @@ class MyPythonNode(Node):
         self._declare_and_fill_map('k_d_yaw', 0.0, "K D of yaw", self.config)
 
         self.update_control_param()
+
+    # TODO:
+    ### trajectory generation ###
+    def cubic_trajectory(self, time_final):
+        
+        # calculate a2, a3
+        
+        if time_now < time_final:
+            z_des = z_init + a2 * (time_now)**2 + a3 * (time_now)**3
+        else:
+            z_des = z_final
+    
 
 
 def main(args=None):
