@@ -51,7 +51,7 @@ class MyPythonNode(Node):
         # set timer if needed
         timer_period = 0.05  # 50 msec - 20 Hz
         self.timer = self.create_timer(self.control_period, self.timer_callback)
-        self.i = 0
+        # self.i = 0
         
         # variables
         # mode -> array
@@ -101,6 +101,8 @@ class MyPythonNode(Node):
         self.time_final = 20
         self.traj = CubicTrajectory(self.time, self.time_final)
         self.generated_z_des, self.generated_z_dot_des = self.traj.generateCubicTrajectory()
+        self.traj_flag = False
+        self.i = 0
 
     def pid_to_pwm(self, pid):
         """
@@ -133,21 +135,24 @@ class MyPythonNode(Node):
         # TODO:
         # setup for trajectory control
 
-        i = 0
-        traj = self.generated_z_des
-        self.desired_depth = traj[i]
-        depth_control = self.pid_depth.calculate_pid(self.desired_depth, self.depth_p0, self.time)
-        depth_control = self.pid_to_pwm(depth_control)  
-        self.Correction_depth = int(depth_control)
+        current_depth = data
 
-        # tolerance for depth
-        if np.abs(self.depth_p0 - self.desired_depth) < 0.02:
-            if i < len(traj):
-                self.desired_depth = traj[i]
-                i += 1
+        # check if trajectory is generated
+        if self.traj_flag:    
+            traj = self.generated_z_des
+            self.desired_depth = traj[self.i]
+            depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, self.time)
+            depth_control = self.pid_to_pwm(depth_control)  
+            self.Correction_depth = int(depth_control)
+
+            # tolerance for depth
+            if np.abs(self.depth_p0 - self.desired_depth) < 0.02:
+                if self.i < len(traj):
+                    self.desired_depth = traj[self.i]
+                    self.i += 1
         
         
-        depth_control = self.pid_depth.calculate_pid(self.desired_depth, self.depth_p0, self.time)
+        depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, self.time)
         depth_control = self.pid_to_pwm(depth_control)
 
         # update Correction_depth
