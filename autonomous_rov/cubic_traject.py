@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 time_init = 0
 time_now = 0
 time_final = 20
-dt = 0.01
+dt = 0.1
+
 
 # Generate time array
 time_values = np.arange(time_init, time_final , dt) 
@@ -38,6 +39,9 @@ for i in time_values:
         print("Error")
 
     time_now += dt
+
+print(z_desired)
+
 
 # Plot the cubic trajectory
 plt.plot(time_values, z_desired, label="Cubic Spline")
