@@ -17,6 +17,7 @@ from geometry_msgs.msg import Twist
 
 from autonomous_rov.PIDController import PIDController
 from autonomous_rov.CubicTrajectory import CubicTrajectory
+from autonomous_rov.AlphaBetaFilter import AlphaBetaFilter
 from rcl_interfaces.msg import ParameterDescriptor, SetParametersResult
 
 class MyPythonNode(Node):
@@ -87,7 +88,7 @@ class MyPythonNode(Node):
         # corrections for control
         # assume neutral buoyancy + water bottle
         # ~ 1.5 kgf -> 15 N
-        # TODO: see the mapping function for 
+        
         self.Correction_yaw = 1500
         self.Correction_depth = 1500 # need to calculate using water bottle + flotability
 
@@ -110,6 +111,10 @@ class MyPythonNode(Node):
         self.generated_z_des, self.generated_z_dot_des = self.traj.generateCubicTrajectory()
         self.traj_flag = False
         self.i = 0
+
+        # alpha-beta filter
+        self.depth_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
+        self.yaw_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
 
     def pid_to_pwm(self, pid):
         """
@@ -137,9 +142,7 @@ class MyPythonNode(Node):
         # TODO: 
         # setup depth servo control here
         # ...
-        # upcomment to generate trajectory
 
-        # TODO:
         # setup for trajectory control
         # print ("data: ", data.data,"type: ", type(data.data))
         current_depth = data.data
