@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def alpha_beta_filter(depth_measurements,alpha=0.1,beta = 0.005,dt=1/58,position_estimate = 0.0,velocity_estimate = 0.0):
+def alpha_beta_filter(depth_measurements,alpha=0.2,beta = 0.1,dt=5,position_estimate = 30000,velocity_estimate =40):
 
     """
     Alpha-Beta Filter for Depth Measurements
@@ -29,13 +29,15 @@ def alpha_beta_filter(depth_measurements,alpha=0.1,beta = 0.005,dt=1/58,position
     for p_measured in depth_measurements:
         # Predict next position and velocity
         p_predicted = position_estimate + dt * velocity_estimate
+        print("p predicted",p_predicted)
         v_predicted = velocity_estimate
+        print("v predicted",v_predicted)
 
         # Update the position and velocity estimates
         position_estimate = p_predicted + alpha * (p_measured - p_predicted)
-        velocity_estimate = v_predicted + beta * (p_measured - p_predicted)
+        velocity_estimate = v_predicted + beta * ((p_measured - p_predicted) / dt)
 
-        # Store the results
+        # Store the results 
         position_estimates.append(position_estimate)
         velocity_estimates.append(velocity_estimate)
 
@@ -83,3 +85,14 @@ def plot_alpha_beta(thruster_command,depth_measurements,position_estimates,veloc
     plt.grid(True)
     plt.tight_layout()
     plt.show()
+
+
+measurements = [30171, 30353, 30756, 30799, 31018, 31278, 31276, 31379,	31748, 32175]
+
+pose, vel, time = alpha_beta_filter(measurements)
+
+plt.plot(time, pose)
+plt.plot(time, vel)
+plt.plot(time, measurements)
+plt.legend(['Pose', 'Vel', 'Measurements'])
+plt.show()
