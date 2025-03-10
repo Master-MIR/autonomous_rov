@@ -62,6 +62,10 @@ class MyPythonNode(Node):
         self.set_mode[0] = True  # Mode manual
         self.set_mode[1] = False  # Mode automatic without correction
         self.set_mode[2] = False  # Mode with correction
+        
+        # self.set_mode[0] = False
+        # self.set_mode[1] = False
+        # self.set_mode[2] = True
 
         # Conditions
         self.init_a0 = True
@@ -97,7 +101,7 @@ class MyPythonNode(Node):
         # create parameter callback
         self.add_on_set_parameters_callback(self.callback_params)
 
-        self.desired_depth = 0.0
+        self.desired_depth = 1.0
         self.desired_yaw = 0.0
 
         # call trajectory generation
@@ -119,7 +123,7 @@ class MyPythonNode(Node):
             pwm = 1900
         elif pwm < 1100:
             pwm = 1100
-        return pwm
+        return float(pwm)
     
     def RelAltCallback(self, data):
         """
@@ -137,8 +141,8 @@ class MyPythonNode(Node):
 
         # TODO:
         # setup for trajectory control
-
-        current_depth = data
+        # print ("data: ", data.data,"type: ", type(data.data))
+        current_depth = data.data
 
         # check if trajectory is generated
         if self.traj_flag:    
@@ -157,7 +161,9 @@ class MyPythonNode(Node):
         
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, self.time)
         depth_control = self.pid_to_pwm(depth_control)
-        self.thrusters_val.publish(depth_control)
+        pub_depth = Float64()
+        pub_depth.data = depth_control
+        self.thrusters_val.publish(pub_depth)
 
         # update Correction_depth
         # Correction_depth = 1500
@@ -256,10 +262,13 @@ class MyPythonNode(Node):
         elif self.set_mode[
             1]:  # Arbitrary velocity command can be defined here to observe robot's velocity, zero by default
             self.setOverrideRCIN(1500, 1500, 1500, 1500, 1500, 1500)
+            # self.get_logger().info("Setmode[1]")
             return
         elif self.set_mode[2]: # dis mode
             # send commands in correction mode
             self.setOverrideRCIN(1500, 1500, self.Correction_depth, self.Correction_yaw, 1500, 1500)
+            # self.get_logger().info("Setmode[2]")
+
         else:  # normally, never reached
             pass
 
