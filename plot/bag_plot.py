@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import ast
 import re
 
-# 🔧 **Configurable Variables** (Change These Easily)
+#  **Configurable Variables** (Change These Easily)
 CSV_FILE = "_bluerov2_cmd_vel.csv"  # Path to CSV
 PLOT_AXES = [0, 2]  # Select which velocity components to plot
 PLOT_TITLE = "Linear X and Z Velocities Over Time"
@@ -40,21 +40,21 @@ def plot_velocity_components(df, axes_indices, title):
     for idx in axes_indices:
         plt.plot(df["Time"], df["_linear"].apply(lambda x: x[idx]), label=labels[idx], linewidth=LINE_WIDTH)
 
-    # ✅ **Updated Axis Labels**
+    #  **Updated Axis Labels**
     plt.xlabel(X_LABEL, fontsize=20)
     plt.ylabel(Y_LABEL, fontsize=20)
 
-    # ✅ **Updated Legend Position**
+    # **Updated Legend Position**
     plt.legend(fontsize=14, loc=LEGEND_POSITION)
 
-    # ✅ **Improved Grid**
+    #  **Improved Grid**
     plt.grid(visible=True, which='both', linestyle='--', linewidth=0.7)
 
-    # ✅ **Tighter Layout for Better Readability**
+    # **Tighter Layout for Better Readability**
     plt.tick_params(axis='both', labelsize=16)
     plt.tight_layout()
     plt.show()
 
-# 🚀 **Run the Script**
+#  **Run the Script**
 df = load_joystick_data(CSV_FILE)
 plot_velocity_components(df, axes_indices=PLOT_AXES, title=PLOT_TITLE)
