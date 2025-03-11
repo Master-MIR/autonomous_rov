@@ -114,7 +114,7 @@ class MyPythonNode(Node):
         self.yaw_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
 
         # Initialize trajectory but do not start
-        self.trajectory = CubicTrajectory(z_init=0.0, z_final=-0.5)
+        self.trajectory = CubicTrajectory(z_init=0.0, z_final=-0.2)
         self.traj_active = False  # Trajectory state
         self.time_init = None
         self.time_final = None
@@ -213,11 +213,27 @@ class MyPythonNode(Node):
         pub_depth.data = depth_control
         self.thrusters_val.publish(pub_depth)
         
-        # filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, current_time)
-        # pub_state = Odometry()
-        # pub_state.pose.pose.position.z = filtered_depth
-        # pub_state.twist.twist.linear.z = filtered_depth_dot
-        # self.filtered_state.publish(pub_state)
+        filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, current_time)
+        pub_state = Odometry()
+        pub_state.pose.pose.position.z = filtered_depth
+        pub_state.twist.twist.linear.z = filtered_depth_dot
+        self.filtered_state.publish(pub_state)
+
+        # pid task with the observer
+        #######3 uncomment for task 10
+
+        # z_dot = filtered_depth_dot
+        # depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, current_time, z_dot) - floatability
+        # pub_error_depth = Float64()
+        # pub_error_depth.data = depth_control
+        # self.pub_depth.publish(pub_error_depth)
+        # depth_control = self.pid_to_pwm(-depth_control)
+        # pub_depth = Float64()
+        # pub_depth.data = depth_control
+        # self.thrusters_val.publish(pub_depth)
+
+        # calculate the control
+
 
         ##########################################
         # depth_control = 0.37 # floatability of the robot

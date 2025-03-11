@@ -50,20 +50,21 @@ class PIDController:
 
             # calculate derivative error
 
-            self.diff_err = (self.err - self.prev_err) / dt
+            # self.diff_err = (self.err - self.prev_err) / dt
 
             # calucalte integral error
 
             self.int_err = self.int_err + \
                 ((self.err + self.prev_err) * dt / 2.0)
+            
 
-    def calculate_pid(self, desired, actual, t):
+    def calculate_pid(self, desired, actual, t, speed=0.0):
         # calculate PID
         self.calculate_error(desired, actual, t)
 
         self.P = self.k_p * self.err
         self.I = self.k_i * self.int_err
-        self.D = self.k_d * self.diff_err
+        self.D = self.k_d * speed
         PID = self.P + self.I + self.D
 
         self.prev_err = deepcopy(self.err)
