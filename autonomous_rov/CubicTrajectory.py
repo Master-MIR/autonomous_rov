@@ -23,10 +23,10 @@ class CubicTrajectory:
         if t < time_init:
             return self.z_init, 0.0
         elif t < time_final:
-            a2 = (3.0 * (self.z_final - self.z_init) / (time_final**2))
-            a3 = (-2.0 * (self.z_final - self.z_init) / (time_final**3))
+            a2 = (3.0 * (self.z_final - self.z_init) / ((time_final-time_init)**2))
+            a3 = (-2.0 * (self.z_final - self.z_init) / ((time_final-time_init)**3))
             z = self.z_init + (a2 * (t - time_init)**2) + (a3 * (t - time_init)**3)
             z_dot = (2 * a2 * (t - time_init)) + (3 * a3 * (t - time_init)**2)
             return z, z_dot
-        else:
+        else:####
             return self.z_final, 0.0

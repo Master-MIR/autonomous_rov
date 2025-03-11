@@ -64,18 +64,18 @@ class MyPythonNode(Node):
         # variables
         # mode -> array
         self.set_mode = [0] * 3
-        self.set_mode[0] = True  # Mode manual
-        self.set_mode[1] = False  # Mode automatic without correction
-        self.set_mode[2] = False  # Mode with correction
+        # self.set_mode[0] = True  # Mode manual
+        # self.set_mode[1] = False  # Mode automatic without correction
+        # self.set_mode[2] = False  # Mode with correction
         
-        # self.set_mode[0] = False
-        # self.set_mode[1] = False
-        # self.set_mode[2] = True
+        self.set_mode[0] = False
+        self.set_mode[1] = False
+        self.set_mode[2] = True
 
         # Conditions
         self.init_a0 = True
         self.init_p0 = True
-        self.arming = False
+        self.arming = True
 
         self.angle_roll_ajoyCallback0 = 0.0
         self.angle_pitch_a0 = 0.0
@@ -114,7 +114,7 @@ class MyPythonNode(Node):
         self.yaw_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
 
         # Initialize trajectory but do not start
-        self.trajectory = CubicTrajectory(z_init=0.0, z_final=0.5)
+        self.trajectory = CubicTrajectory(z_init=0.0, z_final=-0.5)
         self.traj_active = False  # Trajectory state
         self.time_init = None
         self.time_final = None
