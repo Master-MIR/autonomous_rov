@@ -64,18 +64,18 @@ class MyPythonNode(Node):
         # variables
         # mode -> array
         self.set_mode = [0] * 3
-        # self.set_mode[0] = True  # Mode manual
-        # self.set_mode[1] = False  # Mode automatic without correction
-        # self.set_mode[2] = False  # Mode with correction
+        self.set_mode[0] = True  # Mode manual
+        self.set_mode[1] = False  # Mode automatic without correction
+        self.set_mode[2] = False  # Mode with correction
         
-        self.set_mode[0] = False
-        self.set_mode[1] = False
-        self.set_mode[2] = True
+        # self.set_mode[0] = False
+        # self.set_mode[1] = False
+        # self.set_mode[2] = True
 
         # Conditions
         self.init_a0 = True
         self.init_p0 = True
-        self.arming = True
+        self.arming = False
 
         self.angle_roll_ajoyCallback0 = 0.0
         self.angle_pitch_a0 = 0.0
@@ -106,7 +106,7 @@ class MyPythonNode(Node):
         # create parameter callback
         self.add_on_set_parameters_callback(self.callback_params)
 
-        self.desired_depth = 1.0
+        self.desired_depth = -0.2
         self.desired_yaw = 0.0
 
         # alpha-beta filter
@@ -118,7 +118,7 @@ class MyPythonNode(Node):
         self.traj_active = False  # Trajectory state
         self.time_init = None
         self.time_final = None
-        self.desired_depth = 0.0
+        # self.desired_depth = 0.0
 
         # Service to start trajectory
         self.srv = self.create_service(SetBool, 'start_trajectory', self.trajectory_callback)
@@ -148,9 +148,9 @@ class MyPythonNode(Node):
         Convert pid output to pwm signal
         """
         if pid > 0:
-            pwm = 1430 + 120 * pid
+            pwm = 1468 - 110 * pid
         else:
-            pwm = 1540 - 100 * pid
+            pwm = 1528 - 90 * pid
         if pwm > 1900:
             pwm = 1900
         elif pwm < 1100:
@@ -200,18 +200,31 @@ class MyPythonNode(Node):
                 self.traj_active = False
                 self.get_logger().info("Trajectory complete.")
         
+        floatability = 0.305
         
-        depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, current_time)
-        depth_control = self.pid_to_pwm(depth_control)
+        depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, current_time) - floatability
+        pub_error_depth = Float64()
+        pub_error_depth.data = depth_control
+        self.pub_depth.publish(pub_error_depth)
+
+        depth_control = self.pid_to_pwm(-depth_control)
+
         pub_depth = Float64()
         pub_depth.data = depth_control
         self.thrusters_val.publish(pub_depth)
         
-        filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, current_time)
-        pub_state = Odometry()
-        pub_state.pose.pose.position.z = filtered_depth
-        pub_state.twist.twist.linear.z = filtered_depth_dot
-        self.filtered_state.publish(pub_state)
+        # filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, current_time)
+        # pub_state = Odometry()
+        # pub_state.pose.pose.position.z = filtered_depth
+        # pub_state.twist.twist.linear.z = filtered_depth_dot
+        # self.filtered_state.publish(pub_state)
+
+        ##########################################
+        # depth_control = 0.37 # floatability of the robot
+
+        # depth_control = self.pid_to_pwm(floatability)
+        ##########################################
+
 
         # update Correction_depth
         # Correction_depth = 1500
@@ -270,7 +283,6 @@ class MyPythonNode(Node):
         p = angular_velocity.x
         q = angular_velocity.y
         r = angular_velocity.z
-
         vel = Twist() # angular velocity
         vel.angular.x = p
         vel.angular.y = q
@@ -293,7 +305,7 @@ class MyPythonNode(Node):
 
         # Correction_yaw = self.Correction_yaw + yaw_control
         correction_yaw = self.pid_to_pwm(yaw_control)
-        self.yaw_val.publish(correction_yaw)
+        # self.yaw_val.publish(correction_yaw)
 
 
         self.Correction_yaw = int(correction_yaw)
@@ -560,7 +572,7 @@ class MyPythonNode(Node):
 
     def declare_and_set_params(self):
         # self.config = {}
-        self._declare_and_fill_map('k_p_depth', 0.0, "K P of depth", self.config)
+        self._declare_and_fill_map('k_p_depth', 4.0, "K P of depth", self.config)
         self._declare_and_fill_map('k_i_depth', 0.0, "K I of depth", self.config)
         self._declare_and_fill_map('k_d_depth', 0.0, "K D of depth", self.config)
 
