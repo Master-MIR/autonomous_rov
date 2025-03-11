@@ -12,8 +12,9 @@ from sensor_msgs.msg import Joy, Imu, FluidPressure, LaserScan
 from mavros_msgs.srv import CommandLong, SetMode, StreamRate
 from mavros_msgs.msg import OverrideRCIn, Mavlink
 from mavros_msgs.srv import EndpointAdd
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, Pose
 from nav_msgs.msg import Odometry
+from std_srvs.srv import SetBool
 
 from autonomous_rov.PIDController import PIDController
 from autonomous_rov.CubicTrajectory import CubicTrajectory
@@ -35,6 +36,8 @@ class MyPythonNode(Node):
         self.thrusters_val = self.create_publisher(Float64, 'thrusters_val', 10)
         self.yaw_val = self.create_publisher(Float64, 'yaw_val', 10)
         self.filtered_state = self.create_publisher(Odometry, 'filtered_state', 10)
+        self.pub_generated_traj = self.create_publisher(Pose, 'generated_traj', 10)
+        self.pub_generated_traj_dot = self.create_publisher(Twist, 'generated_traj_dot', 10)
 
 
         self.get_logger().info("Publishers created.")
@@ -61,18 +64,18 @@ class MyPythonNode(Node):
         # variables
         # mode -> array
         self.set_mode = [0] * 3
-        self.set_mode[0] = True  # Mode manual
-        self.set_mode[1] = False  # Mode automatic without correction
-        self.set_mode[2] = False  # Mode with correction
+        # self.set_mode[0] = True  # Mode manual
+        # self.set_mode[1] = False  # Mode automatic without correction
+        # self.set_mode[2] = False  # Mode with correction
         
-        # self.set_mode[0] = False
-        # self.set_mode[1] = False
-        # self.set_mode[2] = True
+        self.set_mode[0] = False
+        self.set_mode[1] = False
+        self.set_mode[2] = True
 
         # Conditions
         self.init_a0 = True
         self.init_p0 = True
-        self.arming = False
+        self.arming = True
 
         self.angle_roll_ajoyCallback0 = 0.0
         self.angle_pitch_a0 = 0.0
@@ -106,16 +109,39 @@ class MyPythonNode(Node):
         self.desired_depth = 1.0
         self.desired_yaw = 0.0
 
-        # call trajectory generation
-        self.time_final = 20
-        self.traj = CubicTrajectory(self.time, self.time_final)
-        self.generated_z_des, self.generated_z_dot_des = self.traj.generateCubicTrajectory()
-        self.traj_flag = False
-        self.i = 0
-
         # alpha-beta filter
         self.depth_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
         self.yaw_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
+
+        # Initialize trajectory but do not start
+        self.trajectory = CubicTrajectory(z_init=0.0, z_final=0.5)
+        self.traj_active = False  # Trajectory state
+        self.time_init = None
+        self.time_final = None
+        self.desired_depth = 0.0
+
+        # Service to start trajectory
+        self.srv = self.create_service(SetBool, 'start_trajectory', self.trajectory_callback)
+
+    def trajectory_callback(self, request, response):
+        """
+        Service callback: Start or stop trajectory generation based on boolean input.
+        """
+        if request.data:  # True -> Start trajectory
+            self.time_init = self.get_clock().now().seconds_nanoseconds()[0] + \
+                             self.get_clock().now().seconds_nanoseconds()[1] * 1e-9
+            self.time_final = self.time_init + 20  # 20 seconds trajectory
+            self.traj_active = True  # Enable trajectory following
+            response.success = True
+            response.message = "Trajectory started"
+            self.get_logger().info("Trajectory started.")
+        else:  # False -> Stop trajectory
+            self.traj_active = False
+            response.success = True
+            response.message = "Trajectory stopped"
+            self.get_logger().info("Trajectory stopped.")
+
+        return response
 
     def pid_to_pwm(self, pid):
         """
@@ -149,32 +175,39 @@ class MyPythonNode(Node):
         
         # get time now
         time_tupple = self.get_clock().now().seconds_nanoseconds()
-        self.time = time_tupple[0] + (time_tupple[1] * 10**-9)
+        current_time = time_tupple[0] + (time_tupple[1] * 10**-9)
 
         current_depth = data.data
 
         # check if trajectory is generated
-        if self.traj_flag:    
-            traj = self.generated_z_des
-            self.desired_depth = traj[self.i]
-            depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, self.time)
-            depth_control = self.pid_to_pwm(depth_control)  
-            self.Correction_depth = int(depth_control)
+        if self.traj_active:
+            # Get waypoint from trajectory
+            self.desired_depth, desired_velocity = self.trajectory.get_waypoint(current_time, self.time_init, self.time_final)
 
-            # tolerance for depth
-            if np.abs(self.depth_p0 - self.desired_depth) < 0.02:
-                if self.i < len(traj):
-                    self.desired_depth = traj[self.i]
-                    self.i += 1
+            # Publish waypoint
+            waypoint_msg = Pose()
+            waypoint_msg.position.z = self.desired_depth
+            self.pub_generated_traj.publish(waypoint_msg)
+            
+            waypoint_dot_msg = Twist()
+            waypoint_dot_msg.linear.z = desired_velocity
+            self.pub_generated_traj_dot.publish(waypoint_dot_msg)
+
+            self.get_logger().info(f"Generated Waypoint - Z: {self.desired_depth:.3f}, Z_dot: {desired_velocity:.3f}")
+
+            # Stop trajectory if time exceeds
+            if current_time > self.time_final:
+                self.traj_active = False
+                self.get_logger().info("Trajectory complete.")
         
         
-        depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, self.time)
+        depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, current_time)
         depth_control = self.pid_to_pwm(depth_control)
         pub_depth = Float64()
         pub_depth.data = depth_control
         self.thrusters_val.publish(pub_depth)
         
-        filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, self.time)
+        filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, current_time)
         pub_state = Odometry()
         pub_state.pose.pose.position.z = filtered_depth
         pub_state.twist.twist.linear.z = filtered_depth_dot
