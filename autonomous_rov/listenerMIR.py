@@ -13,7 +13,7 @@ from mavros_msgs.srv import CommandLong, SetMode, StreamRate
 from mavros_msgs.msg import OverrideRCIn, Mavlink
 from mavros_msgs.srv import EndpointAdd
 from geometry_msgs.msg import Twist
-
+from nav_msgs.msg import Odometry
 
 from autonomous_rov.PIDController import PIDController
 from autonomous_rov.CubicTrajectory import CubicTrajectory
@@ -34,6 +34,7 @@ class MyPythonNode(Node):
         self.pub_linear_velocity = self.create_publisher(Twist, 'linear_velocity', 10)
         self.thrusters_val = self.create_publisher(Float64, 'thrusters_val', 10)
         self.yaw_val = self.create_publisher(Float64, 'yaw_val', 10)
+        self.filtered_state = self.create_publisher(Odometry, 'filtered_state', 10)
 
 
         self.get_logger().info("Publishers created.")
@@ -145,6 +146,11 @@ class MyPythonNode(Node):
 
         # setup for trajectory control
         # print ("data: ", data.data,"type: ", type(data.data))
+        
+        # get time now
+        time_tupple = self.get_clock().now().seconds_nanoseconds()
+        self.time = time_tupple[0] + (time_tupple[1] * 10**-9)
+
         current_depth = data.data
 
         # check if trajectory is generated
@@ -167,6 +173,12 @@ class MyPythonNode(Node):
         pub_depth = Float64()
         pub_depth.data = depth_control
         self.thrusters_val.publish(pub_depth)
+        
+        filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, self.time)
+        pub_state = Odometry()
+        pub_state.pose.pose.position.z = filtered_depth
+        pub_state.twist.twist.linear.z = filtered_depth_dot
+        self.filtered_state.publish(pub_state)
 
         # update Correction_depth
         # Correction_depth = 1500
