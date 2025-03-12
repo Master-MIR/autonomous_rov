@@ -44,11 +44,13 @@ print(z_desired)
 
 
 # Plot the cubic trajectory
+plt.figure(figsize=(10, 6))
 plt.plot(time_values, z_desired, label="Cubic Spline")
 plt.plot(time_values, z_dot_desired, label="Cubic Spline Velocity")
-plt.xlabel("Time")
-plt.ylabel("Position (z)")
+plt.xlabel("Time [$s$]", fontsize=16)
+plt.ylabel("Depth [$m$]", fontsize=16)
 plt.title("Cubic Spline Trajectory")
 plt.legend()
 plt.grid()
 plt.show()
+plt.savefig("cubic_spline.pdf", format='pdf')

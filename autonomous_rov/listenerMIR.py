@@ -114,7 +114,7 @@ class MyPythonNode(Node):
         self.yaw_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
 
         # Initialize trajectory but do not start
-        self.trajectory = CubicTrajectory(z_init=0.0, z_final=-0.2)
+        self.trajectory = CubicTrajectory(z_init=self.depth_p0, z_final=-0.2)
         self.traj_active = False  # Trajectory state
         self.time_init = None
         self.time_final = None
@@ -200,6 +200,11 @@ class MyPythonNode(Node):
                 self.traj_active = False
                 self.get_logger().info("Trajectory complete.")
         
+        ##########################################
+        # depth_control = 0.37 # floatability of the robot
+
+        # depth_control = self.pid_to_pwm(floatability)
+        ##########################################
         floatability = 0.305
         
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, current_time) - floatability
@@ -221,7 +226,7 @@ class MyPythonNode(Node):
 
         # pid task with the observer
         #######3 uncomment for task 10
-
+        ##############################################
         # z_dot = filtered_depth_dot
         # depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, current_time, z_dot) - floatability
         # pub_error_depth = Float64()
@@ -231,30 +236,19 @@ class MyPythonNode(Node):
         # pub_depth = Float64()
         # pub_depth.data = depth_control
         # self.thrusters_val.publish(pub_depth)
-
-        # calculate the control
-
-
-        ##########################################
-        # depth_control = 0.37 # floatability of the robot
-
-        # depth_control = self.pid_to_pwm(floatability)
-        ##########################################
-
+        ##############################################
 
         # update Correction_depth
-        # Correction_depth = 1500
-
-        # Correction_depth = self.Correction_depth + depth_control #??
-
-        # chagnge the correction depth -> pid control output
         self.Correction_depth = int(depth_control)
-        # Send PWM commands to motors in timer
 
     def OdoCallback(self, data):
         """
         Get imu data from this function
         """
+        # get time now
+        time_tupple = self.get_clock().now().seconds_nanoseconds()
+        current_time = time_tupple[0] + (time_tupple[1] * 10**-9)
+
         orientation = data.orientation
         angular_velocity = data.angular_velocity
 
@@ -264,6 +258,7 @@ class MyPythonNode(Node):
         z = orientation.z
         w = orientation.w
 
+        # quaternion to euler angles
         sinr_cosp = 2.0 * (w * x + y * z)
         cosr_cosp = 1.0 - 2.0 * (x * x + y * y)
         sinp = 2.0 * (w * y - z * x)
@@ -319,7 +314,6 @@ class MyPythonNode(Node):
         # yaw command to be adapted using sensor feedback
         # self.Correction_yaw = 1500
 
-        # Correction_yaw = self.Correction_yaw + yaw_control
         correction_yaw = self.pid_to_pwm(yaw_control)
         # self.yaw_val.publish(correction_yaw)
 
