@@ -217,12 +217,13 @@ class MyPythonNode(Node):
         pub_depth = Float64()
         pub_depth.data = depth_control
         self.thrusters_val.publish(pub_depth)
-        
-        filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, current_time)
-        pub_state = Odometry()
-        pub_state.pose.pose.position.z = filtered_depth
-        pub_state.twist.twist.linear.z = filtered_depth_dot
-        self.filtered_state.publish(pub_state)
+
+        # calculate alpha-beta filter for task 9
+        # filtered_depth, filtered_depth_dot = self.depth_filter.filter(current_depth, current_time)
+        # pub_state = Odometry()
+        # pub_state.pose.pose.position.z = filtered_depth
+        # pub_state.twist.twist.linear.z = filtered_depth_dot
+        # self.filtered_state.publish(pub_state)
 
         # pid task with the observer
         #######3 uncomment for task 10
@@ -307,15 +308,28 @@ class MyPythonNode(Node):
         if (self.set_mode[0]):
             return
 
+        # alpha-beta filter
+        filtered_angle, filtered_angle_dot = self.yaw_filter.filter(angle.angular.z, current_time)
+        
+        # Compute yaw error
+        yaw_error = self.desired_yaw - filtered_angle
+        if yaw_error > np.pi:
+            yaw_error -= 2.0 * np.pi
+        elif yaw_error < -np.pi:
+            yaw_error += 2.0 * np.pi
+
         # yaw control
-        yaw_control = self.pid_yaw.calculate_pid(self.desired_yaw, angle.angular.z, self.time)
+        yaw_control = self.pid_yaw.calculate_pid(self.desired_yaw, filtered_angle, current_time)
 
         # Send PWM commands to motors
         # yaw command to be adapted using sensor feedback
         # self.Correction_yaw = 1500
 
         correction_yaw = self.pid_to_pwm(yaw_control)
-        # self.yaw_val.publish(correction_yaw)
+
+        pub_error_yaw = Float64()
+        pub_error_yaw.data = correction_yaw
+        self.yaw_val.publish(pub_error_yaw)
 
 
         self.Correction_yaw = int(correction_yaw)
@@ -586,7 +600,7 @@ class MyPythonNode(Node):
         self._declare_and_fill_map('k_i_depth', 0.0, "K I of depth", self.config)
         self._declare_and_fill_map('k_d_depth', 0.0, "K D of depth", self.config)
 
-        self._declare_and_fill_map('k_p_yaw', 0.0, "K P of yaw", self.config)
+        self._declare_and_fill_map('k_p_yaw', 1.0, "K P of yaw", self.config)
         self._declare_and_fill_map('k_i_yaw', 0.0, "K I of yaw", self.config)
         self._declare_and_fill_map('k_d_yaw', 0.0, "K D of yaw", self.config)
 
