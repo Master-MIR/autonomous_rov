@@ -310,13 +310,34 @@ class MyPythonNode(Node):
 
         # alpha-beta filter
         filtered_angle, filtered_angle_dot = self.yaw_filter.filter(angle.angular.z, current_time)
-        
+
         # Compute yaw error
         yaw_error = self.desired_yaw - filtered_angle
         if yaw_error > np.pi:
             yaw_error -= 2.0 * np.pi
         elif yaw_error < -np.pi:
             yaw_error += 2.0 * np.pi
+
+        # trajectory generation
+        ############# NOTE: Uncomment trajectory for depth control #############
+        if self.traj_active:
+            self.desired_yaw, desired_yaw_dot = self.trajectory.get_waypoint(current_time, self.time_init, self.time_final)
+            self.get_logger().info(f"Generated Waypoint - Yaw: {self.desired_yaw:.3f}, Yaw_dot: {desired_yaw_dot:.3f}")
+
+            # Publish waypoint
+            waypoint_msg = Pose()
+            waypoint_msg.position.z = self.desired_depth
+            self.pub_generated_traj.publish(waypoint_msg)
+            
+            waypoint_dot_msg = Twist()
+            waypoint_dot_msg.linear.z = desired_yaw_dot
+            self.pub_generated_traj_dot.publish(waypoint_dot_msg)
+
+
+            # Stop trajectory if time exceeds
+            if current_time > self.time_final:
+                self.traj_active = False
+                self.get_logger().info("Trajectory complete.")
 
         # yaw control
         yaw_control = self.pid_yaw.calculate_pid(self.desired_yaw, filtered_angle, current_time)
