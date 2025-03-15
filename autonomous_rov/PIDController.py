@@ -57,6 +57,10 @@ class PIDController:
             self.int_err = self.int_err + \
                 ((self.err + self.prev_err) * dt / 2.0)
             
+        # reset integral error
+        if (np.abs(self.err) < 0.02):
+            self.int_err = 0.0
+            
 
     def calculate_pid(self, desired, actual, t, speed=0.0):
         # calculate PID

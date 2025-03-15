@@ -39,6 +39,8 @@ class MyPythonNode(Node):
         self.pub_generated_traj = self.create_publisher(Pose, 'generated_traj', 10)
         self.pub_generated_traj_dot = self.create_publisher(Twist, 'generated_traj_dot', 10)
 
+        # self.pub_yaw_ang = self.create_publisher(Float64, 'yaw_ang', 10)
+
 
         self.get_logger().info("Publishers created.")
 
@@ -64,18 +66,18 @@ class MyPythonNode(Node):
         # variables
         # mode -> array
         self.set_mode = [0] * 3
-        # self.set_mode[0] = True  # Mode manual
-        # self.set_mode[1] = False  # Mode automatic without correction
-        # self.set_mode[2] = False  # Mode with correction
+        self.set_mode[0] = True  # Mode manual
+        self.set_mode[1] = False  # Mode automatic without correction
+        self.set_mode[2] = False  # Mode with correction
         
-        self.set_mode[0] = False
-        self.set_mode[1] = False
-        self.set_mode[2] = True
+        # self.set_mode[0] = False
+        # self.set_mode[1] = False
+        # self.set_mode[2] = True
 
         # Conditions
         self.init_a0 = True
         self.init_p0 = True
-        self.arming = True
+        self.arming = False
 
         self.angle_roll_ajoyCallback0 = 0.0
         self.angle_pitch_a0 = 0.0
@@ -106,15 +108,16 @@ class MyPythonNode(Node):
         # create parameter callback
         self.add_on_set_parameters_callback(self.callback_params)
 
-        self.desired_depth = -0.2
-        self.desired_yaw = 0.0
+        self.desired_depth = -0.1
+        self.desired_yaw = np.pi / 2.0
 
         # alpha-beta filter
         self.depth_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
         self.yaw_filter = AlphaBetaFilter(alpha=0.85, beta=0.005)
 
         # Initialize trajectory but do not start
-        self.trajectory = CubicTrajectory(z_init=self.depth_p0, z_final=-0.2)
+        # self.trajectory = CubicTrajectory(z_init=self.depth_p0, z_final=-0.5)
+        self.trajectory = CubicTrajectory(z_init=self.angle_yaw_a0, z_final=self.desired_yaw)
         self.traj_active = False  # Trajectory state
         self.time_init = None
         self.time_final = None
@@ -180,25 +183,25 @@ class MyPythonNode(Node):
         current_depth = data.data
 
         # check if trajectory is generated
-        if self.traj_active:
-            # Get waypoint from trajectory
-            self.desired_depth, desired_velocity = self.trajectory.get_waypoint(current_time, self.time_init, self.time_final)
+        # if self.traj_active:
+        #     # Get waypoint from trajectory
+        #     self.desired_depth, desired_velocity = self.trajectory.get_waypoint(current_time, self.time_init, self.time_final)
 
-            # Publish waypoint
-            waypoint_msg = Pose()
-            waypoint_msg.position.z = self.desired_depth
-            self.pub_generated_traj.publish(waypoint_msg)
+        #     # Publish waypoint
+        #     waypoint_msg = Pose()
+        #     waypoint_msg.position.z = self.desired_depth
+        #     self.pub_generated_traj.publish(waypoint_msg)
             
-            waypoint_dot_msg = Twist()
-            waypoint_dot_msg.linear.z = desired_velocity
-            self.pub_generated_traj_dot.publish(waypoint_dot_msg)
+        #     waypoint_dot_msg = Twist()
+        #     waypoint_dot_msg.linear.z = desired_velocity
+        #     self.pub_generated_traj_dot.publish(waypoint_dot_msg)
 
-            self.get_logger().info(f"Generated Waypoint - Z: {self.desired_depth:.3f}, Z_dot: {desired_velocity:.3f}")
+        #     self.get_logger().info(f"Generated Waypoint - Z: {self.desired_depth:.3f}, Z_dot: {desired_velocity:.3f}")
 
-            # Stop trajectory if time exceeds
-            if current_time > self.time_final:
-                self.traj_active = False
-                self.get_logger().info("Trajectory complete.")
+        #     # Stop trajectory if time exceeds
+        #     if current_time > self.time_final:
+        #         self.traj_active = False
+        #         self.get_logger().info("Trajectory complete.")
         
         ##########################################
         # depth_control = 0.37 # floatability of the robot
@@ -210,7 +213,7 @@ class MyPythonNode(Node):
         depth_control = self.pid_depth.calculate_pid(self.desired_depth, current_depth, current_time) - floatability
         pub_error_depth = Float64()
         pub_error_depth.data = depth_control
-        self.pub_depth.publish(pub_error_depth)
+        # self.pub_depth.publish(pub_error_depth)
 
         depth_control = self.pid_to_pwm(-depth_control)
 
@@ -309,14 +312,14 @@ class MyPythonNode(Node):
             return
 
         # alpha-beta filter
-        filtered_angle, filtered_angle_dot = self.yaw_filter.filter(angle.angular.z, current_time)
+        # filtered_angle, filtered_angle_dot = self.yaw_filter.filter(angle.angular.z, current_time)
 
         # Compute yaw error
-        yaw_error = self.desired_yaw - filtered_angle
-        if yaw_error > np.pi:
-            yaw_error -= 2.0 * np.pi
-        elif yaw_error < -np.pi:
-            yaw_error += 2.0 * np.pi
+        # yaw_error = self.desired_yaw - filtered_angle
+        # if yaw_error > np.pi:
+        #     yaw_error -= 2.0 * np.pi
+        # elif yaw_error < -np.pi:pub_depth
+        #     yaw_error += 2.0 * np.pi
 
         # trajectory generation
         ############# NOTE: Uncomment trajectory for depth control #############
@@ -330,7 +333,7 @@ class MyPythonNode(Node):
             self.pub_generated_traj.publish(waypoint_msg)
             
             waypoint_dot_msg = Twist()
-            waypoint_dot_msg.linear.z = desired_yaw_dot
+            waypoint_dot_msg.angular.z = desired_yaw_dot
             self.pub_generated_traj_dot.publish(waypoint_dot_msg)
 
 
@@ -340,7 +343,11 @@ class MyPythonNode(Node):
                 self.get_logger().info("Trajectory complete.")
 
         # yaw control
-        yaw_control = self.pid_yaw.calculate_pid(self.desired_yaw, filtered_angle, current_time)
+        yaw_control = self.pid_yaw.calculate_pid(self.desired_yaw, angle_yaw, current_time, r)
+        _yaw = Float64()
+        _yaw.data = yaw_control
+        self.pub_depth.publish(_yaw)
+        # self.pub_depth.publish(yaw_control)
 
         # Send PWM commands to motors
         # yaw command to be adapted using sensor feedback
@@ -621,9 +628,9 @@ class MyPythonNode(Node):
         self._declare_and_fill_map('k_i_depth', 0.0, "K I of depth", self.config)
         self._declare_and_fill_map('k_d_depth', 0.0, "K D of depth", self.config)
 
-        self._declare_and_fill_map('k_p_yaw', 1.0, "K P of yaw", self.config)
+        self._declare_and_fill_map('k_p_yaw', 0.5, "K P of yaw", self.config)
         self._declare_and_fill_map('k_i_yaw', 0.0, "K I of yaw", self.config)
-        self._declare_and_fill_map('k_d_yaw', 0.0, "K D of yaw", self.config)
+        self._declare_and_fill_map('k_d_yaw', 0.5, "K D of yaw", self.config)
 
         self.update_control_param()
 
